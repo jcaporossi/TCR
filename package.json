@@ -1,0 +1,25 @@
+{
+  "name": "alyrafinalproject",
+  "version": "1.0.0",
+  "description": "Alyra final project",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jcaporossi/AlyraFinalProject.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jcaporossi/AlyraFinalProject/issues"
+  },
+  "homepage": "https://github.com/jcaporossi/AlyraFinalProject#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.2.0"
+  }
+}
