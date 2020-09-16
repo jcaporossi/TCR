@@ -273,6 +273,7 @@ contract PLCRVoting {
     @param _voteQuorum Type of majority (out of 100) that is necessary for poll to be successful
     @param _commitDuration Length of desired commit period in seconds
     @param _revealDuration Length of desired reveal period in seconds
+    @return pollID ID of the created poll (> 0)
     */
     function startPoll(uint _voteQuorum, uint _commitDuration, uint _revealDuration) public returns (uint pollID) {
         pollNonce = pollNonce + 1;
