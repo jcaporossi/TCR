@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./ParameterizerFactory.sol";
 import "./Registry.sol";
 import "./PLCRVoting/PLCRVoting.sol";
@@ -8,7 +8,7 @@ import "./Parameterizer.sol";
 
 contract RegistryFactory {
 
-    event NewRegistry(address creator, EIP20 token, PLCRVoting plcr, Parameterizer parameterizer, Registry registry);
+    event NewRegistry(address creator, ERC20 token, PLCRVoting plcr, Parameterizer parameterizer, Registry registry);
 
     ParameterizerFactory public parameterizerFactory;
     ProxyFactory public proxyFactory;
@@ -24,18 +24,18 @@ contract RegistryFactory {
     /*
     @dev deploys and initializes a new Registry contract that consumes a token at an address
         supplied by the user.
-    @param _token           an EIP20 token to be consumed by the new Registry contract
+    @param _token           an ERC20 token to be consumed by the new Registry contract
     */
     function newRegistryBYOToken(
-        EIP20 _token,
-        uint[] _parameters,
-        string _name
+        ERC20 _token,
+        uint[] memory _parameters,
+        string memory _name
     ) public returns (Registry) {
         Parameterizer parameterizer = parameterizerFactory.newParameterizerBYOToken(_token, _parameters);
         PLCRVoting plcr = parameterizer.voting();
 
-        Registry registry = Registry(proxyFactory.createProxy(canonizedRegistry, ""));
-        registry.init(_token, plcr, parameterizer, _name);
+        Registry registry = Registry(proxyFactory.createProxy(address(canonizedRegistry), ""));
+        registry.init(address(_token), address(plcr), address(parameterizer), _name);
 
         emit NewRegistry(msg.sender, _token, plcr, parameterizer, registry);
         return registry;
@@ -51,22 +51,22 @@ contract RegistryFactory {
     */
     function newRegistryWithToken(
         uint _supply,
-        string _tokenName,
-        uint8 _decimals,
-        string _symbol,
-        uint[] _parameters,
-        string _registryName
+        string memory _tokenName,
+        //uint8 _decimals,
+        string memory _symbol,
+        uint[] memory _parameters,
+        string memory _registryName
     ) public returns (Registry) {
-        // Creates a new EIP20 token & transfers the supply to creator (msg.sender)
+        // Creates a new ERC20 token & transfers the supply to creator (msg.sender)
         // Deploys & initializes (1) PLCRVoting contract & (2) Parameterizer contract
-        Parameterizer parameterizer = parameterizerFactory.newParameterizerWithToken(_supply, _tokenName, _decimals, _symbol, _parameters);
-        EIP20 token = EIP20(parameterizer.token());
+        Parameterizer parameterizer = parameterizerFactory.newParameterizerWithToken(_supply, _tokenName, _symbol, _parameters);
+        ERC20 token = ERC20(parameterizer.token());
         token.transfer(msg.sender, _supply);
         PLCRVoting plcr = parameterizer.voting();
 
         // Create & initialize a new Registry contract
-        Registry registry = Registry(proxyFactory.createProxy(canonizedRegistry, ""));
-        registry.init(token, plcr, parameterizer, _registryName);
+        Registry registry = Registry(proxyFactory.createProxy(address(canonizedRegistry), ""));
+        registry.init(address(token), address(plcr), address(parameterizer), _registryName);
 
         emit NewRegistry(msg.sender, token, plcr, parameterizer, registry);
         return registry;

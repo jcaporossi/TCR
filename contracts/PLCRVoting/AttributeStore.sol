@@ -5,13 +5,13 @@ library AttributeStore {
         mapping(bytes32 => uint) store;
     }
 
-    function getAttribute(Data storage self, bytes32 UUID, string memory attrName) public returns (uint) {
-        bytes32 key = sha3(UUID, attrName);
+    function getAttribute(Data storage self, bytes32 UUID, string memory attrName) public view returns (uint) {
+        bytes32 key = keccak256(abi.encode(UUID,attrName));
         return self.store[key];
     }
 
-    function attachAttribute(Data storage self, bytes32 UUID, string memory attrName, uint attrVal) public {
-        bytes32 key = sha3(UUID, attrName);
+    function setAttribute(Data storage self, bytes32 UUID, string memory attrName, uint attrVal) public {
+        bytes32 key = keccak256(abi.encode(UUID, attrName));
         self.store[key] = attrVal;
     }
 }

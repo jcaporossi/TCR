@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./Parameterizer.sol";
 import "./PLCRVoting/PLCRVoting.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -53,7 +53,7 @@ contract Registry {
     mapping(bytes32 => Listing) public listings;
 
     // Global Variables
-    EIP20Interface public token;
+    ERC20 public token;
     PLCRVoting public voting;
     Parameterizer public parameterizer;
     string public name;
@@ -62,12 +62,12 @@ contract Registry {
     @dev Initializer. Can only be called once.
     @param _token The address where the ERC20 token contract is deployed
     */
-    function init(address _token, address _voting, address _parameterizer, string _name) public {
-        require(_token != 0 && address(token) == 0);
-        require(_voting != 0 && address(voting) == 0);
-        require(_parameterizer != 0 && address(parameterizer) == 0);
+    function init(address _token, address _voting, address _parameterizer, string memory _name) public {
+        require(_token != address(0) && address(token) == address(0));
+        require(_voting != address(0) && address(voting) == address(0));
+        require(_parameterizer != address(0) && address(parameterizer) == address(0));
 
-        token = EIP20Interface(_token);
+        token = ERC20(_token);
         voting = PLCRVoting(_voting);
         parameterizer = Parameterizer(_parameterizer);
         name = _name;
@@ -84,7 +84,7 @@ contract Registry {
     @param _amount      The number of ERC20 tokens a user is willing to potentially stake
     @param _data        Extra data relevant to the application. Think IPFS hashes.
     */
-    function apply_(bytes32 _listingHash, uint _amount, string _data) external {
+    function apply_(bytes32 _listingHash, uint _amount, string calldata _data) external {
         require(!isWhitelisted(_listingHash));
         require(!appWasMade(_listingHash));
         require(_amount >= parameterizer.get("minDeposit"));
@@ -98,7 +98,7 @@ contract Registry {
         listing.unstakedDeposit = _amount;
 
         // Transfers tokens from user to Registry contract
-        require(token.transferFrom(listing.owner, this, _amount));
+        require(token.transferFrom(listing.owner, address(this), _amount));
 
         emit _Application(_listingHash, _amount, listing.applicationExpiry, _data, msg.sender);
     }
@@ -114,7 +114,7 @@ contract Registry {
         require(listing.owner == msg.sender);
 
         listing.unstakedDeposit += _amount;
-        require(token.transferFrom(msg.sender, this, _amount));
+        require(token.transferFrom(msg.sender, address(this), _amount));
 
         emit _Deposit(_listingHash, _amount, listing.unstakedDeposit, msg.sender);
     }
@@ -192,7 +192,7 @@ contract Registry {
     @param _listingHash The listingHash being challenged, whether listed or in application
     @param _data        Extra data relevant to the challenge. Think IPFS hashes.
     */
-    function challenge(bytes32 _listingHash, string _data) external returns (uint challengeID) {
+    function challenge(bytes32 _listingHash, string calldata _data) external returns (uint challengeID) {
         Listing storage listing = listings[_listingHash];
         uint minDeposit = parameterizer.get("minDeposit");
 
@@ -231,7 +231,7 @@ contract Registry {
         listing.unstakedDeposit -= minDeposit;
 
         // Takes tokens from challenger
-        require(token.transferFrom(msg.sender, this, minDeposit));
+        require(token.transferFrom(msg.sender, address(this), minDeposit));
 
         (uint commitEndDate, uint revealEndDate,,,) = voting.pollMap(pollID);
 
@@ -259,7 +259,7 @@ contract Registry {
                           a challenge if one exists.
     @param _listingHashes The listingHashes whose status are being updated
     */
-    function updateStatuses(bytes32[] _listingHashes) public {
+    function updateStatuses(bytes32[] memory _listingHashes) public {
         // loop through arrays, revealing each individual vote values
         for (uint i = 0; i < _listingHashes.length; i++) {
             updateStatus(_listingHashes[i]);
@@ -304,7 +304,7 @@ contract Registry {
                          must call updateStatus() before this can be called.
     @param _challengeIDs The PLCR pollIDs of the challenges rewards are being claimed for
     */
-    function claimRewards(uint[] _challengeIDs) public {
+    function claimRewards(uint[] memory _challengeIDs) public {
         // loop through arrays, claiming each individual vote reward
         for (uint i = 0; i < _challengeIDs.length; i++) {
             claimReward(_challengeIDs[i]);

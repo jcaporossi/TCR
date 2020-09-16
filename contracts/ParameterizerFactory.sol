@@ -4,6 +4,7 @@ import "./PLCRVoting/PLCRFactory.sol";
 import "./PLCRVoting/PLCRVoting.sol";
 import "./Parameterizer.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ParameterizerFactory {
 
@@ -28,18 +29,18 @@ contract ParameterizerFactory {
     @param _parameters        array of canonical parameters
     */
     function newParameterizerBYOToken(
-        EIP20 _token,
-        uint[] _parameters
+        ERC20 _token,
+        uint[] memory _parameters
     ) public returns (Parameterizer) {
         PLCRVoting plcr = plcrFactory.newPLCRBYOToken(_token);
-        Parameterizer parameterizer = Parameterizer(proxyFactory.createProxy(canonizedParameterizer, ""));
+        Parameterizer parameterizer = Parameterizer(proxyFactory.createProxy(address(canonizedParameterizer), ""));
 
         parameterizer.init(
-            _token,
-            plcr,
+            address(_token),
+            address(plcr),
             _parameters
         );
-        emit NewParameterizer(msg.sender, _token, plcr, parameterizer);
+        emit NewParameterizer(msg.sender, address(_token), address(plcr), parameterizer);
         return parameterizer;
     }
 
@@ -53,26 +54,26 @@ contract ParameterizerFactory {
     */
     function newParameterizerWithToken(
         uint _supply,
-        string _name,
-        uint8 _decimals,
-        string _symbol,
-        uint[] _parameters
+        string memory _name,
+        //uint8 _decimals,
+        string memory _symbol,
+        uint[] memory _parameters
     ) public returns (Parameterizer) {
         // Creates a new EIP20 token & transfers the supply to creator (msg.sender)
         // Deploys & initializes a new PLCRVoting contract
-        PLCRVoting plcr = plcrFactory.newPLCRWithToken(_supply, _name, _decimals, _symbol);
-        EIP20 token = EIP20(plcr.token());
+        PLCRVoting plcr = plcrFactory.newPLCRWithToken(_supply, _name, _symbol);
+        ERC20 token = ERC20(plcr.token());
         token.transfer(msg.sender, _supply);
 
         // Create & initialize a new Parameterizer contract
-        Parameterizer parameterizer = Parameterizer(proxyFactory.createProxy(canonizedParameterizer, ""));
+        Parameterizer parameterizer = Parameterizer(proxyFactory.createProxy(address(canonizedParameterizer), ""));
         parameterizer.init(
-            token,
-            plcr,
+            address(token),
+            address(plcr),
             _parameters
         );
 
-        emit NewParameterizer(msg.sender, token, plcr, parameterizer);
+        emit NewParameterizer(msg.sender, address(token), address(plcr), parameterizer);
         return parameterizer;
     }
 }

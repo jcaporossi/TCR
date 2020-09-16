@@ -1,7 +1,7 @@
 pragma solidity^0.6.0;
 
 import "./PLCRVoting/PLCRVoting.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Parameterizer {
@@ -57,7 +57,7 @@ contract Parameterizer {
     mapping(bytes32 => ParamProposal) public proposals;
 
     // Global Variables
-    EIP20Interface public token;
+    ERC20 public token;
     PLCRVoting public voting;
     uint public PROCESSBY = 604800; // 7 days
 
@@ -70,12 +70,12 @@ contract Parameterizer {
     function init(
         address _token,
         address _plcr,
-        uint[] _parameters
+        uint[] memory _parameters
     ) public {
-        require(_token != 0 && address(token) == 0);
-        require(_plcr != 0 && address(voting) == 0);
+        require(_token != address(0) && address(token) == address(0));
+        require(_plcr != address(0) && address(voting) == address(0));
 
-        token = EIP20Interface(_token);
+        token = ERC20(_token);
         voting = PLCRVoting(_plcr);
 
         // minimum deposit for listing to be whitelisted
@@ -130,7 +130,7 @@ contract Parameterizer {
     @param _name the name of the proposed param to be set
     @param _value the proposed value to set the param to be set
     */
-    function proposeReparameterization(string _name, uint _value) public returns (bytes32) {
+    function proposeReparameterization(string memory _name, uint _value) public returns (bytes32) {
         uint deposit = get("pMinDeposit");
         bytes32 propID = keccak256(abi.encodePacked(_name, _value));
 
@@ -156,7 +156,7 @@ contract Parameterizer {
             value: _value
         });
 
-        require(token.transferFrom(msg.sender, this, deposit)); // escrow tokens (deposit amt)
+        require(token.transferFrom(msg.sender, address(this), deposit)); // escrow tokens (deposit amt)
 
         emit _ReparameterizationProposal(_name, _value, propID, deposit, proposals[propID].appExpiry, msg.sender);
         return propID;
@@ -190,7 +190,7 @@ contract Parameterizer {
         proposals[_propID].challengeID = pollID;       // update listing to store most recent challenge
 
         //take tokens from challenger
-        require(token.transferFrom(msg.sender, this, deposit));
+        require(token.transferFrom(msg.sender, address(this), deposit));
 
         (uint commitEndDate, uint revealEndDate,,,) = voting.pollMap(pollID);
 
@@ -273,7 +273,7 @@ contract Parameterizer {
                             Someone must call updateStatus() before this can be called.
     @param _challengeIDs    The PLCR pollIDs of the challenges rewards are being claimed for
     */
-    function claimRewards(uint[] _challengeIDs) public {
+    function claimRewards(uint[] memory _challengeIDs) public {
         // loop through arrays, claiming each individual vote reward
         for (uint i = 0; i < _challengeIDs.length; i++) {
             claimReward(_challengeIDs[i]);
@@ -344,7 +344,7 @@ contract Parameterizer {
     @notice gets the parameter keyed by the provided name value from the params mapping
     @param _name the key whose value is to be determined
     */
-    function get(string _name) public view returns (uint value) {
+    function get(string memory _name) public view returns (uint value) {
         return params[keccak256(abi.encodePacked(_name))];
     }
 
@@ -393,7 +393,7 @@ contract Parameterizer {
     @param _name the name of the param to be set
     @param _value the value to set the param to be set
     */
-    function set(string _name, uint _value) private {
+    function set(string memory _name, uint _value) private {
         params[keccak256(abi.encodePacked(_name))] = _value;
     }
 }
