@@ -3,7 +3,7 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./ParameterizerFactory.sol";
 import "./Registry.sol";
-import "./PLCRVoting/PLCRVoting.sol";
+import "./PLCRVoting/contracts/PLCRVoting.sol";
 import "./Parameterizer.sol";
 
 contract RegistryFactory {

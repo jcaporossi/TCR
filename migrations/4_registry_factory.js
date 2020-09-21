@@ -1,8 +1,8 @@
 /* global artifacts */
 
 const RegistryFactory = artifacts.require('./RegistryFactory.sol');
-const DLL = artifacts.require('dll/DLL.sol');
-const AttributeStore = artifacts.require('attrstore/AttributeStore.sol');
+const DLL = artifacts.require('../PLCRVoting/contracts/DLL');
+const AttributeStore = artifacts.require('../PLCRVoting/contracts/AttributeStore');
 const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
 
 module.exports = (deployer) => {

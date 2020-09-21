@@ -1,9 +1,9 @@
 /* global artifacts */
 
-const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
-const DLL = artifacts.require('dll/DLL.sol');
-const AttributeStore = artifacts.require('attrstore/AttributeStore.sol');
-const PLCRFactory = artifacts.require('plcr-revival/PLCRFactory.sol');
+const ParameterizerFactory = artifacts.require('./ParameterizerFactory');
+const DLL = artifacts.require('../PLCRVoting/contracts/DLL');
+const AttributeStore = artifacts.require('../PLCRVoting/contracts/AttributeStore');
+const PLCRFactory = artifacts.require('../PLCRVoting/contracts/PLCRFactory.sol');
 
 module.exports = (deployer, network) => {
   // link libraries
