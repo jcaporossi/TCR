@@ -109,7 +109,7 @@ contract('Parameterizer', (accounts) => {
         // make proposal to change pMinDeposit
         // this is to induce an error where:
         // a challenge could have a different stake than the proposal being challenged
-        const proposalReceiptOne = await utils.as(proposer, parameterizer.proposeReparameterization, 'pMinDeposit', paramConfig.pMinDeposit * 10);
+        const proposalReceiptOne = await utils.as(proposer, parameterizer.proposeReparameterization, 'pMinDeposit', new BN(paramConfig.pMinDeposit, 10).mul(new BN(10)));
         const propIDOne = proposalReceiptOne.logs[0].args.propID;
 
         // increase time
@@ -143,7 +143,7 @@ contract('Parameterizer', (accounts) => {
 
     it('should not allow a challenges for non-existent proposals', async () => {
       try {
-        await utils.as(challenger, parameterizer.challengeReparameterization, new BN(0).toString());
+        await utils.as(challenger, parameterizer.challengeReparameterization, web3.utils.asciiToHex('0'));
       } catch (err) {
         assert(utils.isEVMException(err), err.toString());
         return;

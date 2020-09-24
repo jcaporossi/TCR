@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 /* global assert contract */
 const fs = require('fs');
-const BN = require('bignumber.js');
 const utils = require('../utils');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
@@ -19,7 +18,7 @@ contract('Parameterizer', (accounts) => {
     beforeEach(async () => {
       const {
         votingProxy, paramProxy, registryProxy, tokenInstance,
-      } = await utils.getProxies(token);
+      } = await utils.getProxies();
       voting = votingProxy;
       parameterizer = paramProxy;
       registry = registryProxy;
@@ -32,8 +31,8 @@ contract('Parameterizer', (accounts) => {
       // calculate an applyStageLen which when added to the current block time will be greater
       // than 2^256 - 1
       const blockTimestamp = await utils.getBlockTimestamp();
-      const maxEVMuint = new BN('2').pow('256').minus('1');
-      const applyStageLen = maxEVMuint.minus(blockTimestamp).plus('1');
+      const maxEVMuint = new web3.utils.BN('2', 10).pow(new web3.utils.BN('256',10)).sub(new web3.utils.BN('1',10));
+      const applyStageLen = maxEVMuint.sub(new web3.utils.BN(blockTimestamp)).add(new web3.utils.BN('1',10));
 
       // propose the malicious applyStageLen
       const receipt = await utils.as(proposer, parameterizer.proposeReparameterization, 'pApplyStageLen', applyStageLen.toString(10));
@@ -130,7 +129,7 @@ contract('Parameterizer', (accounts) => {
       );
 
       const proposerFinalBalance = await token.balanceOf.call(proposer);
-      const proposerExpected = proposerStartingBalance.sub(new BN(paramConfig.pMinDeposit, 10));
+      const proposerExpected = proposerStartingBalance.sub(new web3.utils.BN(paramConfig.pMinDeposit, 10));
       assert.strictEqual(
         proposerFinalBalance.toString(10), proposerExpected.toString(10),
         'The challenge loser\'s token balance is not as expected',

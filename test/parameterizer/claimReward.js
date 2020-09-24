@@ -1,13 +1,12 @@
 /* eslint-env mocha */
 /* global assert contract */
 const fs = require('fs');
-const BN = require('bn.js');
 const utils = require('../utils');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
 const paramConfig = config.paramDefaults;
 
-const bigTen = number => new BN(number.toString(10), 10);
+const bigTen = number => new web3.utils.BN(number.toString(10), 10);
 
 contract('Parameterizer', (accounts) => {
   describe('Function: claimReward', () => {
@@ -102,11 +101,15 @@ contract('Parameterizer', (accounts) => {
         await utils.as(voterBob, parameterizer.claimReward, challengeID);
         await utils.as(voterBob, voting.withdrawVotingRights, '20');
 
-        // TODO: do better than approximately.
-        assert.approximately(
-          voterBobReward.toNumber(10),
-          voterAliceReward.mul(new BN('2', 10)).toNumber(10),
-          2,
+        //console.log("Bob reward :"+voterBobReward.toString(10));
+        //console.log("Alice reward :"+voterAliceReward.toString(10));
+        //JEC: 50 tokens to be shared in between Alice (1/3) and Bob (2/3): 
+        // for Alice => 50/3 = 16,666666666666666667
+        // for Bob => 2/3 x 50 = 33,333333333333333333
+        // TODO: do better than adding 2 to Alice
+        assert.equal(
+          voterBobReward.toString(10),
+          voterAliceReward.mul(new web3.utils.BN('2', 10)).add(new web3.utils.BN('2', 10)).toString(10),
           'Rewards were not properly distributed between voters',
         );
         // TODO: add asserts for final balances

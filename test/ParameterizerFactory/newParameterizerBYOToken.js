@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract assert artifacts */
 
-const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
+const EIP20 = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
 const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
 const Parameterizer = artifacts.require('./Parameterizer.sol');
 const fs = require('fs');
@@ -28,7 +28,7 @@ contract('ParameterizerFactory', (accounts) => {
       const token = await EIP20.new(
         tokenParams.supply,
         tokenParams.name,
-        tokenParams.decimals,
+        //tokenParams.decimals,
         tokenParams.symbol,
       );
 
@@ -51,7 +51,7 @@ contract('ParameterizerFactory', (accounts) => {
       ];
       const parameterizerReceipt = await parameterizerFactory
         .newParameterizerBYOToken(token.address, parameters, { from: accounts[0] });
-      const parameterizer = Parameterizer.at(parameterizerReceipt.logs[0].args.parameterizer);
+      const parameterizer = await Parameterizer.at(parameterizerReceipt.logs[0].args.parameterizer);
       const { creator } = parameterizerReceipt.logs[0].args;
 
       // verify: parameterizer's token

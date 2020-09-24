@@ -20,6 +20,12 @@
   },
   "homepage": "https://github.com/jcaporossi/AlyraFinalProject#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^3.2.0"
+    "@openzeppelin/contracts": "^3.2.0",
+    "bignumber.js": "^9.0.0",
+    "ethereumjs-abi": "^0.6.8",
+    "ethjs": "^0.4.0",
+    "ethjs-provider-http": "^0.1.6",
+    "ethjs-rpc": "^0.2.0",
+    "fs": "0.0.1-security"
   }
 }

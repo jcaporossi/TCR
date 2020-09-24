@@ -7,13 +7,13 @@ const EthRPC = require('ethjs-rpc');
 const abi = require('ethereumjs-abi');
 const fs = require('fs');
 
-const ethRPC = new EthRPC(new HttpProvider('http://localhost:7545'));
-const ethQuery = new Eth(new HttpProvider('http://localhost:7545'));
+const ethRPC = new EthRPC(new HttpProvider('http://localhost:8545'));
+const ethQuery = new Eth(new HttpProvider('http://localhost:8545'));
 
 const PLCRVoting = artifacts.require('PLCRVoting.sol');
 const Parameterizer = artifacts.require('Parameterizer.sol');
 const Registry = artifacts.require('Registry.sol');
-const Token = artifacts.require('EIP20.sol');
+const Token = artifacts.require('PLCRToken.sol');
 
 const RegistryFactory = artifacts.require('RegistryFactory.sol');
 
@@ -28,7 +28,6 @@ const utils = {
     const registryReceipt = await registryFactory.newRegistryWithToken(
       config.token.supply,
       config.token.name,
-      config.token.decimals,
       config.token.symbol,
       [
         paramConfig.minDeposit,
@@ -56,10 +55,12 @@ const utils = {
       registry,
     } = registryReceipt.logs[0].args;
 
-    const tokenInstance = Token.at(token);
-    const votingProxy = PLCRVoting.at(plcr);
-    const paramProxy = Parameterizer.at(parameterizer);
-    const registryProxy = Registry.at(registry);
+
+    const tokenInstance = await Token.at(token);
+    const votingProxy = await PLCRVoting.at(plcr);
+    const paramProxy = await Parameterizer.at(parameterizer);
+    const registryProxy = await Registry.at(registry);
+
 
     const proxies = {
       tokenInstance,
@@ -72,15 +73,15 @@ const utils = {
 
   approveProxies: async (accounts, token, plcr, parameterizer, registry) => (
     Promise.all(accounts.map(async (user) => {
-      await token.transfer(user, 10000000000000000000000000);
+      await token.transfer(user, new web3.utils.BN('10000000000000000000000000'));
       if (plcr) {
-        await token.approve(plcr.address, 10000000000000000000000000, { from: user });
+        await token.approve(plcr.address, new web3.utils.BN('10000000000000000000000000'), { from: user });
       }
       if (parameterizer) {
-        await token.approve(parameterizer.address, 10000000000000000000000000, { from: user });
+        await token.approve(parameterizer.address, new web3.utils.BN('10000000000000000000000000'), { from: user });
       }
       if (registry) {
-        await token.approve(registry.address, 10000000000000000000000000, { from: user });
+        await token.approve(registry.address, new web3.utils.BN('10000000000000000000000000'), { from: user });
       }
     }))
   ),
@@ -117,7 +118,7 @@ const utils = {
   },
 
   addToWhitelist: async (domain, deposit, actor, registry) => {
-    await utils.as(actor, registry.apply, domain, deposit, '');
+    await utils.as(actor, registry.apply_, domain, deposit, '');
     await utils.increaseTime(paramConfig.applyStageLength + 1);
     await utils.as(actor, registry.updateStatus, domain);
   },

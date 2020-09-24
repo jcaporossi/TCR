@@ -1,14 +1,13 @@
 /* eslint-env mocha */
 /* global assert contract */
 const fs = require('fs');
-const BN = require('bignumber.js');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
 const paramConfig = config.paramDefaults;
 
 const utils = require('../utils.js');
 
-const bigTen = number => new BN(number.toString(10), 10);
+const bigTen = number => new web3.utils.BN(number.toString(10), 10);
 
 contract('Registry', (accounts) => {
   describe('Function: deposit', () => {
@@ -43,7 +42,7 @@ contract('Registry', (accounts) => {
 
     it('should increase a deposit for a pending application', async () => {
       const listing = utils.getListingHash('pendinglisting.net');
-      await utils.as(applicant, registry.apply, listing, minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, minDeposit, '');
 
       try {
         await utils.as(applicant, registry.deposit, listing, incAmount);

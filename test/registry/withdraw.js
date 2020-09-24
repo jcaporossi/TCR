@@ -28,7 +28,7 @@ contract('Registry', (accounts) => {
     });
 
     it('should not withdraw tokens from a listing that has a deposit === minDeposit', async () => {
-      const dontChallengeListing = 'dontchallenge.net';
+      const dontChallengeListing = web3.utils.asciiToHex('dontchallenge.net');
       const errMsg = 'applicant was able to withdraw tokens';
 
       await utils.addToWhitelist(dontChallengeListing, minDeposit, applicant, registry);

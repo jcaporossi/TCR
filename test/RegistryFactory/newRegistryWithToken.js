@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract assert artifacts */
 
-const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
+const EIP20 = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
 const RegistryFactory = artifacts.require('./RegistryFactory.sol');
 const Registry = artifacts.require('./Registry.sol');
 const fs = require('fs');
@@ -47,17 +47,17 @@ contract('RegistryFactory', (accounts) => {
       const registryReceipt = await registryFactory.newRegistryWithToken(
         tokenParams.supply,
         tokenParams.name,
-        tokenParams.decimals,
+        //tokenParams.decimals,
         tokenParams.symbol,
         parameters,
         'NEW TCR',
         { from: accounts[0] },
       );
       const { creator } = registryReceipt.logs[0].args;
-      const registry = Registry.at(registryReceipt.logs[0].args.registry);
+      const registry = await Registry.at(registryReceipt.logs[0].args.registry);
 
       // verify: registry's token
-      const registryToken = EIP20.at(await registry.token.call());
+      const registryToken = await EIP20.at(await registry.token.call());
       const tokenName = await registryToken.name.call();
       assert.strictEqual(
         tokenName,

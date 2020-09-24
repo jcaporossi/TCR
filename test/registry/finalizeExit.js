@@ -5,7 +5,6 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
 const paramConfig = config.paramDefaults;
 const utils = require('../utils.js');
-const BigNumber = require('bignumber.js');
 
 contract('Registry', (accounts) => {
   describe('Function: finalizeExit', () => {
@@ -76,7 +75,7 @@ contract('Registry', (accounts) => {
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
       // Make sure the listing did not successfully initialize exit
@@ -95,7 +94,7 @@ contract('Registry', (accounts) => {
 
       await registry.initExit(listing, { from: applicant });
       // blockTimestamp is used to calculate when the applicant's exit time is up
-      const blockTimestamp = new BigNumber(await utils.getBlockTimestamp());
+      const blockTimestamp = new web3.utils.BN(await utils.getBlockTimestamp());
       // Trying to finalize exit during waiting period
       try {
         await registry.finalizeExit(listing, { from: applicant });
@@ -110,15 +109,15 @@ contract('Registry', (accounts) => {
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
       // Make sure exitTimeDelay was correctly set
       const listingStruct = await registry.listings.call(listing);
-      const exitTime = blockTimestamp.add(paramConfig.exitTimeDelay);
+      const exitTime = blockTimestamp.add(new web3.utils.BN(paramConfig.exitTimeDelay));
       assert.strictEqual(listingStruct[5].toString(), exitTime.toString(), 'exitTime was not initialized');
       // Make sure exitTimeExpiry was correctly set
-      const exitTimeExpiry = exitTime.add(paramConfig.exitPeriodLen);
+      const exitTimeExpiry = exitTime.add(new web3.utils.BN(paramConfig.exitPeriodLen));
       assert.strictEqual(listingStruct[6].toString(), exitTimeExpiry.toString(), 'exitTimeExpiry was not initialized');
     });
 
@@ -132,7 +131,7 @@ contract('Registry', (accounts) => {
 
       await registry.initExit(listing, { from: applicant });
       // blockTimestamp is used to calculate when the applicant's exit time is up
-      const blockTimestamp = new BigNumber(await utils.getBlockTimestamp());
+      const blockTimestamp = new web3.utils.BN(await utils.getBlockTimestamp());
       await utils.increaseTime(paramConfig.exitTimeDelay + 1);
       // Challenge the listing
       await registry.challenge(listing, '', { from: challenger });
@@ -157,16 +156,16 @@ contract('Registry', (accounts) => {
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
 
       // Make sure exitTimeDelay was correctly set
       const listingStruct = await registry.listings.call(listing);
-      const exitTime = blockTimestamp.add(paramConfig.exitTimeDelay);
+      const exitTime = blockTimestamp.add(new web3.utils.BN(paramConfig.exitTimeDelay));
       assert.strictEqual(listingStruct[5].toString(), exitTime.toString(), 'exitTime was not initialized');
       // Make sure exitTimeExpiry was correctly set
-      const exitTimeExpiry = exitTime.add(paramConfig.exitPeriodLen);
+      const exitTimeExpiry = exitTime.add(new web3.utils.BN(paramConfig.exitPeriodLen));
       assert.strictEqual(listingStruct[6].toString(), exitTimeExpiry.toString(), 'exitTimeExpiry was not initialized');
     });
 
@@ -181,7 +180,7 @@ contract('Registry', (accounts) => {
       // Initialize exit and advance time past exitPeriodLen
       await registry.initExit(listing, { from: applicant });
       // blockTimestamp is used to calculate when the applicant's exit time is up
-      const blockTimestamp = new BigNumber(await utils.getBlockTimestamp());
+      const blockTimestamp = new web3.utils.BN(await utils.getBlockTimestamp());
       await utils.increaseTime(paramConfig.exitTimeDelay + 1);
       await utils.increaseTime(paramConfig.exitPeriodLen + 1);
       const listingStruct = await registry.listings.call(listing);
@@ -202,14 +201,14 @@ contract('Registry', (accounts) => {
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
 
-      const exitTime = blockTimestamp.add(paramConfig.exitTimeDelay);
+      const exitTime = blockTimestamp.add(new web3.utils.BN(paramConfig.exitTimeDelay));
       assert.strictEqual(listingStruct[5].toString(), exitTime.toString(), 'exitTime was not initialized');
 
-      const exitTimeExpiry = exitTime.add(paramConfig.exitPeriodLen);
+      const exitTimeExpiry = exitTime.add(new web3.utils.BN(paramConfig.exitPeriodLen));
       assert.strictEqual(listingStruct[6].toString(), exitTimeExpiry.toString(), 'exitTimeExpiry was not initialized');
     });
 
@@ -269,7 +268,7 @@ contract('Registry', (accounts) => {
 
       // Get initial value of exitPeriodLen and calculate a longer exitPeriodLen
       const initialExitPeriodLen = await parameterizer.get('exitPeriodLen');
-      const newExitPeriodLen = initialExitPeriodLen.times(10);
+      const newExitPeriodLen = initialExitPeriodLen.mul(new web3.utils.BN(10));
 
       // Propose parameter change of exitPeriodLen so user has more time to leave
       const proposalReceipt = await utils.as(applicant, parameterizer.proposeReparameterization, 'exitPeriodLen', newExitPeriodLen);

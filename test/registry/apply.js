@@ -16,7 +16,7 @@ contract('Registry', (accounts) => {
     let registry;
 
     beforeEach(async () => {
-      const { paramProxy, registryProxy, tokenInstance } = await utils.getProxies();
+      const {tokenInstance, votingProxy, paramProxy, registryProxy} = await utils.getProxies();
       parameterizer = paramProxy;
       registry = registryProxy;
       token = tokenInstance;
@@ -27,7 +27,7 @@ contract('Registry', (accounts) => {
     it('should allow a new listing to apply', async () => {
       const listing = utils.getListingHash('nochallenge.net');
 
-      await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
 
       // get the struct in the mapping
       const result = await registry.listings.call(listing);
@@ -44,14 +44,14 @@ contract('Registry', (accounts) => {
 
     it('should not allow a listing to apply which has a pending application', async () => {
       const listing = utils.getListingHash('nochallenge.net');
-      await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
 
       // Verify that the application exists.
       const result = await registry.listings.call(listing);
       assert.strictEqual(result[2], applicant, 'owner of application != address that applied');
 
       try {
-        await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+        await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
       } catch (err) {
         assert(utils.isEVMException(err), err.toString());
         return;
@@ -63,7 +63,7 @@ contract('Registry', (accounts) => {
       'should add a listing to the whitelist which went unchallenged in its application period',
       async () => {
         const listing = utils.getListingHash('nochallenge.net');
-        await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+        await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
         await utils.increaseTime(paramConfig.applyStageLength + 1);
         await registry.updateStatus(listing);
         const result = await registry.isWhitelisted.call(listing);
@@ -80,7 +80,7 @@ contract('Registry', (accounts) => {
       assert.strictEqual(result, true, 'listing was not already whitelisted.');
 
       try {
-        await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+        await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
       } catch (err) {
         // TODO: Check if EVM error
         const errMsg = err.toString();
@@ -98,7 +98,7 @@ contract('Registry', (accounts) => {
         await token.approve(registry.address, '0', { from: applicant });
 
         try {
-          await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+          await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
         } catch (err) {
           assert(utils.isEVMException(err), err.toString());
           return;
@@ -128,12 +128,12 @@ contract('Registry', (accounts) => {
 
       // make sure that the reparameterization proposal was processed as expected
       const actualApplyStageLen = await parameterizer.get.call('applyStageLen');
-      assert.strictEqual(actualApplyStageLen.toString(), applyStageLen.toString(), 'the applyStageLen should have been the proposed value');
+      assert.strictEqual(actualApplyStageLen.toString(10), applyStageLen.toString(10), 'the applyStageLen should have been the proposed value');
 
       const listing = utils.getListingHash('overflow.net');
 
       try {
-        await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+        await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
       } catch (err) {
         assert(utils.isEVMException(err), err.toString());
         return;
@@ -145,10 +145,10 @@ contract('Registry', (accounts) => {
       const listing = utils.getListingHash('smallDeposit.net');
 
       const minDeposit = await parameterizer.get.call('minDeposit');
-      const deposit = minDeposit.sub(10);
+      const deposit = minDeposit.sub(new web3.utils.BN('10', 10));
 
       try {
-        await utils.as(applicant, registry.apply, listing, deposit.toString(), '');
+        await utils.as(applicant, registry.apply_, listing, deposit.toString(), '');
       } catch (err) {
         assert(utils.isEVMException(err), err.toString());
         return;

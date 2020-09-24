@@ -2,7 +2,7 @@
 /* global contract assert artifacts */
 
 const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
-const Token = artifacts.require('tokens/eip20/EIP20.sol');
+const Token = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
 const fs = require('fs');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
@@ -44,7 +44,7 @@ contract('ParameterizerFactory', (accounts) => {
       const parameterizerReceipt = await parameterizerFactory.newParameterizerWithToken(
         tokenParams.supply,
         tokenParams.name,
-        tokenParams.decimals,
+        //tokenParams.decimals,
         tokenParams.symbol,
         parameters,
         { from: accounts[0] },

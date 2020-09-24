@@ -1,14 +1,13 @@
 /* eslint-env mocha */
 /* global assert contract */
 const fs = require('fs');
-const BN = require('bignumber.js');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));
 const paramConfig = config.paramDefaults;
 
 const utils = require('../utils.js');
 
-const bigTen = number => new BN(number.toString(10), 10);
+const bigTen = number => new web3.utils.BN(number.toString(10), 10);
 
 contract('Registry', (accounts) => {
   describe('Function: challenge', () => {
@@ -36,7 +35,7 @@ contract('Registry', (accounts) => {
 
       const challengerStartingBalance = await token.balanceOf.call(challenger);
 
-      await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
       await utils.challengeAndGetPollID(listing, challenger, registry);
       await utils.increaseTime(paramConfig.commitStageLength + paramConfig.revealStageLength + 1);
       await registry.updateStatus(listing);
@@ -47,7 +46,7 @@ contract('Registry', (accounts) => {
       const challengerFinalBalance = await token.balanceOf.call(challenger);
       // Note edge case: no voters, so challenger gets entire stake
       const expectedFinalBalance =
-        challengerStartingBalance.add(new BN(paramConfig.minDeposit, 10));
+        challengerStartingBalance.add(new web3.utils.BN(paramConfig.minDeposit, 10));
       assert.strictEqual(
         challengerFinalBalance.toString(10), expectedFinalBalance.toString(10),
         'Reward not properly disbursed to challenger',
@@ -71,7 +70,7 @@ contract('Registry', (accounts) => {
       const challengerFinalBalance = await token.balanceOf.call(challenger);
       // Note edge case: no voters, so challenger gets entire stake
       const expectedFinalBalance =
-        challengerStartingBalance.add(new BN(paramConfig.minDeposit, 10));
+        challengerStartingBalance.add(new web3.utils.BN(paramConfig.minDeposit, 10));
       assert.strictEqual(
         challengerFinalBalance.toString(10), expectedFinalBalance.toString(10),
         'Reward not properly disbursed to challenger',
@@ -80,9 +79,9 @@ contract('Registry', (accounts) => {
 
     it('should unsuccessfully challenge an application', async () => {
       const listing = utils.getListingHash('winner.net');
-      const minDeposit = new BN(paramConfig.minDeposit, 10);
+      const minDeposit = new web3.utils.BN(paramConfig.minDeposit, 10);
 
-      await utils.as(applicant, registry.apply, listing, minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, minDeposit, '');
       const pollID = await utils.challengeAndGetPollID(listing, challenger, registry);
       await utils.commitVote(pollID, 1, 10, 420, voter, voting);
       await utils.increaseTime(paramConfig.commitStageLength + 1);
@@ -97,8 +96,11 @@ contract('Registry', (accounts) => {
       );
 
       const unstakedDeposit = await utils.getUnstakedDeposit(listing, registry);
+
+
       const expectedUnstakedDeposit =
-        minDeposit.add(minDeposit.mul(bigTen(paramConfig.dispensationPct).div(bigTen(100))));
+        minDeposit.add(minDeposit.mul(bigTen(paramConfig.dispensationPct)).div(bigTen(100)));
+
 
       assert.strictEqual(
         unstakedDeposit.toString(10), expectedUnstakedDeposit.toString(10),
@@ -108,7 +110,7 @@ contract('Registry', (accounts) => {
 
     it('should unsuccessfully challenge a listing', async () => {
       const listing = utils.getListingHash('winner2.net');
-      const minDeposit = new BN(paramConfig.minDeposit, 10);
+      const minDeposit = new web3.utils.BN(paramConfig.minDeposit, 10);
 
       await utils.addToWhitelist(listing, minDeposit, applicant, registry);
 
@@ -123,7 +125,8 @@ contract('Registry', (accounts) => {
       assert.strictEqual(isWhitelisted, true, 'An application which should have succeeded failed');
 
       const unstakedDeposit = await utils.getUnstakedDeposit(listing, registry);
-      const expectedUnstakedDeposit = minDeposit.add(minDeposit.mul(new BN(paramConfig.dispensationPct, 10).div(new BN('100', 10))));
+      const expectedUnstakedDeposit = 
+        minDeposit.add(minDeposit.mul(bigTen(paramConfig.dispensationPct)).div(bigTen(100)));
       assert.strictEqual(
         unstakedDeposit.toString(10), expectedUnstakedDeposit.toString(10),
         'The challenge winner was not properly disbursed their tokens',
@@ -132,8 +135,8 @@ contract('Registry', (accounts) => {
 
     it('should touch-and-remove a listing with a depost below the current minimum', async () => {
       const listing = utils.getListingHash('touchandremove.net');
-      const minDeposit = new BN(paramConfig.minDeposit, 10);
-      const newMinDeposit = minDeposit.add(new BN('1', 10));
+      const minDeposit = new web3.utils.BN(paramConfig.minDeposit, 10);
+      const newMinDeposit = minDeposit.add(new web3.utils.BN('1', 10));
 
       const applicantStartingBal = await token.balanceOf.call(applicant);
 
@@ -182,7 +185,7 @@ contract('Registry', (accounts) => {
 
     it('should revert if challenge occurs on a listing with an open challenge', async () => {
       const listing = utils.getListingHash('doubleChallenge.net');
-      const minDeposit = new BN(await parameterizer.get.call('minDeposit'), 10);
+      const minDeposit = new web3.utils.BN(await parameterizer.get.call('minDeposit'), 10);
 
       await utils.addToWhitelist(listing, minDeposit.toString(), applicant, registry);
 
@@ -200,8 +203,8 @@ contract('Registry', (accounts) => {
     it('should revert if token transfer from user fails', async () => {
       const listing = utils.getListingHash('challengerNeedsTokens.net');
 
-      const minDeposit = new BN(await parameterizer.get.call('minDeposit'), 10);
-      await utils.as(applicant, registry.apply, listing, minDeposit, '');
+      const minDeposit = new web3.utils.BN(await parameterizer.get.call('minDeposit'), 10);
+      await utils.as(applicant, registry.apply_, listing, minDeposit, '');
 
       // Approve the contract to transfer 0 tokens from account so the transfer will fail
       await token.approve(registry.address, '0', { from: challenger });

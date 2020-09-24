@@ -6,7 +6,6 @@ const config = JSON.parse(fs.readFileSync('./conf/config.json'));
 const paramConfig = config.paramDefaults;
 
 const utils = require('../utils.js');
-const BigNumber = require('bignumber.js');
 
 contract('Registry', (accounts) => {
   describe('Function: initExit', () => {
@@ -33,21 +32,21 @@ contract('Registry', (accounts) => {
 
       await registry.initExit(listing, { from: applicant });
       // blockTimestamp is used to calculate when the applicant's exit time is up
-      const blockTimestamp = new BigNumber(await utils.getBlockTimestamp());
+      const blockTimestamp = new web3.utils.BN(await utils.getBlockTimestamp());
 
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
       // Make sure exitTimeDelay was correctly set
       const listingStruct = await registry.listings.call(listing);
-      const exitTime = blockTimestamp.add(paramConfig.exitTimeDelay);
+      const exitTime = blockTimestamp.add(new web3.utils.BN(paramConfig.exitTimeDelay));
       assert.strictEqual(listingStruct[5].toString(), exitTime.toString(), 'exitTime was not set correctly');
 
       // Make sure exitTimeExpiry was correctly set
-      const exitTimeExpiry = exitTime.add(paramConfig.exitPeriodLen);
+      const exitTimeExpiry = exitTime.add(new web3.utils.BN(paramConfig.exitPeriodLen));
       assert.strictEqual(listingStruct[6].toString(), exitTimeExpiry.toString(), 'exitTimeExpiry was not initialized');
     });
 
@@ -78,7 +77,7 @@ contract('Registry', (accounts) => {
       const finalApplicantTokenHoldings = await token.balanceOf.call(applicant);
       assert.strictEqual(
         finalApplicantTokenHoldings.toString(),
-        initialApplicantTokenHoldings.sub(paramConfig.minDeposit).toString(),
+        initialApplicantTokenHoldings.sub(new web3.utils.BN(paramConfig.minDeposit)).toString(),
         'the applicant\'s tokens were returned in spite of failing to exit',
       );
       // Make sure the listing did not successfully initialize exit
@@ -109,11 +108,11 @@ contract('Registry', (accounts) => {
 
     it('should revert if listing is in application stage', async () => {
       const listing = utils.getListingHash('nogoodnames.com');
-      await utils.as(applicant, registry.apply, listing, paramConfig.minDeposit, '');
+      await utils.as(applicant, registry.apply_, listing, paramConfig.minDeposit, '');
 
       const initialListingStruct = await registry.listings.call(listing);
       // Getting blockTimestamp to prove the listing is indeed in application stage
-      const blockTimestamp = new BigNumber(await utils.getBlockTimestamp());
+      const blockTimestamp = new web3.utils.BN(await utils.getBlockTimestamp());
       // Checking to see if the listing is still in application stage
       assert((initialListingStruct[0] > 0 && initialListingStruct[0] > blockTimestamp), 'Listing is not in application stage ');
       try {
