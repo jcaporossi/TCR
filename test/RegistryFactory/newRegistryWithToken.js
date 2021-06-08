@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract assert artifacts */
 
-const EIP20 = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
+const EIP20 = artifacts.require('../../PLCRVoting/contracts/Token.sol');
 const RegistryFactory = artifacts.require('./RegistryFactory.sol');
 const Registry = artifacts.require('./Registry.sol');
 const fs = require('fs');

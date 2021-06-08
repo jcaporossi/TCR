@@ -2,7 +2,7 @@
 /* global contract assert artifacts */
 
 const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
-const Token = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
+const Token = artifacts.require('../../PLCRVoting/contracts/Token.sol');
 const fs = require('fs');
 
 const config = JSON.parse(fs.readFileSync('./conf/config.json'));

@@ -10,10 +10,10 @@ const fs = require('fs');
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:8545'));
 const ethQuery = new Eth(new HttpProvider('http://localhost:8545'));
 
-const PLCRVoting = artifacts.require('PLCRVoting.sol');
-const Parameterizer = artifacts.require('Parameterizer.sol');
-const Registry = artifacts.require('Registry.sol');
-const Token = artifacts.require('PLCRToken.sol');
+const PLCRVoting = artifacts.require('../../PLCRVoting/contracts/PLCRVoting');
+const Parameterizer = artifacts.require('Parameterizer');
+const Registry = artifacts.require('Registry');
+const Token = artifacts.require('../../PLCRVoting/contracts/Token');
 
 const RegistryFactory = artifacts.require('RegistryFactory.sol');
 

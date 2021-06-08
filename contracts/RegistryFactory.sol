@@ -1,21 +1,21 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ParameterizerFactory.sol";
 import "./Registry.sol";
-import "./PLCRVoting/contracts/PLCRVoting.sol";
+import "../../PLCRVoting/contracts/PLCRVoting.sol";
 import "./Parameterizer.sol";
 
 contract RegistryFactory {
 
-    event NewRegistry(address creator, ERC20 token, PLCRVoting plcr, Parameterizer parameterizer, Registry registry);
+    event NewRegistry(address creator, address token, PLCRVoting plcr, Parameterizer parameterizer, Registry registry);
 
     ParameterizerFactory public parameterizerFactory;
     ProxyFactory public proxyFactory;
     Registry public canonizedRegistry;
 
     /// @dev constructor deploys a new proxyFactory.
-    constructor(ParameterizerFactory _parameterizerFactory) public {
+    constructor(ParameterizerFactory _parameterizerFactory) {
         parameterizerFactory = _parameterizerFactory;
         proxyFactory = parameterizerFactory.proxyFactory();
         canonizedRegistry = new Registry();
@@ -27,7 +27,7 @@ contract RegistryFactory {
     @param _token           an ERC20 token to be consumed by the new Registry contract
     */
     function newRegistryBYOToken(
-        ERC20 _token,
+        address _token,
         uint[] memory _parameters,
         string memory _name
     ) public returns (Registry) {
@@ -35,7 +35,7 @@ contract RegistryFactory {
         PLCRVoting plcr = parameterizer.voting();
 
         Registry registry = Registry(proxyFactory.createProxy(address(canonizedRegistry), ""));
-        registry.init(address(_token), address(plcr), address(parameterizer), _name);
+        registry.init(_token, address(plcr), address(parameterizer), _name);
 
         emit NewRegistry(msg.sender, _token, plcr, parameterizer, registry);
         return registry;
@@ -60,7 +60,7 @@ contract RegistryFactory {
         // Creates a new ERC20 token & transfers the supply to creator (msg.sender)
         // Deploys & initializes (1) PLCRVoting contract & (2) Parameterizer contract
         Parameterizer parameterizer = parameterizerFactory.newParameterizerWithToken(_supply, _tokenName, _symbol, _parameters);
-        ERC20 token = ERC20(parameterizer.token());
+        IERC20 token = IERC20(parameterizer.token());
         token.transfer(msg.sender, _supply);
         PLCRVoting plcr = parameterizer.voting();
 
@@ -68,7 +68,7 @@ contract RegistryFactory {
         Registry registry = Registry(proxyFactory.createProxy(address(canonizedRegistry), ""));
         registry.init(address(token), address(plcr), address(parameterizer), _registryName);
 
-        emit NewRegistry(msg.sender, token, plcr, parameterizer, registry);
+        emit NewRegistry(msg.sender, address(token), plcr, parameterizer, registry);
         return registry;
     }
 }

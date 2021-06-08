@@ -1,10 +1,10 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.0;
 
-import "./PLCRVoting/contracts/PLCRFactory.sol";
-import "./PLCRVoting/contracts/PLCRVoting.sol";
+import "../../PLCRVoting/contracts/PLCRFactory.sol";
+import "../../PLCRVoting/contracts/PLCRVoting.sol";
 import "./Parameterizer.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ParameterizerFactory {
 
@@ -15,7 +15,7 @@ contract ParameterizerFactory {
     Parameterizer public canonizedParameterizer;
 
     /// @dev constructor deploys a new canonical Parameterizer contract and a proxyFactory.
-    constructor(PLCRFactory _plcrFactory) public {
+    constructor(PLCRFactory _plcrFactory) {
         plcrFactory = _plcrFactory;
         proxyFactory = plcrFactory.proxyFactory();
         canonizedParameterizer = new Parameterizer();
@@ -29,18 +29,18 @@ contract ParameterizerFactory {
     @param _parameters        array of canonical parameters
     */
     function newParameterizerBYOToken(
-        ERC20 _token,
+        address _token,
         uint[] memory _parameters
     ) public returns (Parameterizer) {
         PLCRVoting plcr = plcrFactory.newPLCRBYOToken(_token);
         Parameterizer parameterizer = Parameterizer(proxyFactory.createProxy(address(canonizedParameterizer), ""));
 
         parameterizer.init(
-            address(_token),
+            _token,
             address(plcr),
             _parameters
         );
-        emit NewParameterizer(msg.sender, address(_token), address(plcr), parameterizer);
+        emit NewParameterizer(msg.sender, _token, address(plcr), parameterizer);
         return parameterizer;
     }
 
@@ -62,7 +62,7 @@ contract ParameterizerFactory {
         // Creates a new EIP20 token & transfers the supply to creator (msg.sender)
         // Deploys & initializes a new PLCRVoting contract
         PLCRVoting plcr = plcrFactory.newPLCRWithToken(_supply, _name, _symbol);
-        ERC20 token = ERC20(plcr.token());
+        IERC20 token = IERC20(plcr.token());
         token.transfer(msg.sender, _supply);
 
         // Create & initialize a new Parameterizer contract

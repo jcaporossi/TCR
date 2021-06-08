@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 /* global contract assert artifacts */
 
-const EIP20 = artifacts.require('PLCRVoting/contracts/PLCRToken.sol');
+const EIP20 = artifacts.require('../../PLCRVoting/contracts/Token.sol');
 const ParameterizerFactory = artifacts.require('./ParameterizerFactory.sol');
 const Parameterizer = artifacts.require('./Parameterizer.sol');
 const fs = require('fs');

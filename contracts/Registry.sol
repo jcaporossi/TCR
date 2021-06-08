@@ -1,9 +1,10 @@
-pragma solidity ^0.6.0;
+pragma solidity^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Parameterizer.sol";
-import "./PLCRVoting/contracts/PLCRVoting.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../PLCRVoting/contracts/PLCRVoting.sol";
+
 
 contract Registry {
 
@@ -11,49 +12,49 @@ contract Registry {
     // EVENTS
     // ------
 
-    event _Application(bytes32 indexed listingHash, uint deposit, uint appEndDate, string data, address indexed applicant);
-    event _Challenge(bytes32 indexed listingHash, uint challengeID, string data, uint commitEndDate, uint revealEndDate, address indexed challenger);
-    event _Deposit(bytes32 indexed listingHash, uint added, uint newTotal, address indexed owner);
-    event _Withdrawal(bytes32 indexed listingHash, uint withdrew, uint newTotal, address indexed owner);
+    event _Application(bytes32 indexed listingHash, uint256 deposit, uint256 appEndDate, string data, address indexed applicant);
+    event _Challenge(bytes32 indexed listingHash, uint256 challengeID, string data, uint256 commitEndDate, uint256 revealEndDate, address indexed challenger);
+    event _Deposit(bytes32 indexed listingHash, uint256 added, uint256 newTotal, address indexed owner);
+    event _Withdrawal(bytes32 indexed listingHash, uint256 withdrew, uint256 newTotal, address indexed owner);
     event _ApplicationWhitelisted(bytes32 indexed listingHash);
     event _ApplicationRemoved(bytes32 indexed listingHash);
     event _ListingRemoved(bytes32 indexed listingHash);
     event _ListingWithdrawn(bytes32 indexed listingHash, address indexed owner);
     event _TouchAndRemoved(bytes32 indexed listingHash);
-    event _ChallengeFailed(bytes32 indexed listingHash, uint indexed challengeID, uint rewardPool, uint totalTokens);
-    event _ChallengeSucceeded(bytes32 indexed listingHash, uint indexed challengeID, uint rewardPool, uint totalTokens);
-    event _RewardClaimed(uint indexed challengeID, uint reward, address indexed voter);
-    event _ExitInitialized(bytes32 indexed listingHash, uint exitTime, uint exitDelayEndDate, address indexed owner);
+    event _ChallengeFailed(bytes32 indexed listingHash, uint256 indexed challengeID, uint256 rewardPool, uint256 totalTokens);
+    event _ChallengeSucceeded(bytes32 indexed listingHash, uint256 indexed challengeID, uint256 rewardPool, uint256 totalTokens);
+    event _RewardClaimed(uint256 indexed challengeID, uint256 reward, address indexed voter);
+    event _ExitInitialized(bytes32 indexed listingHash, uint256 exitTime, uint256 exitDelayEndDate, address indexed owner);
 
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     struct Listing {
-        uint applicationExpiry; // Expiration date of apply stage
+        uint256 applicationExpiry; // Expiration date of apply stage
         bool whitelisted;       // Indicates registry status
         address owner;          // Owner of Listing
-        uint unstakedDeposit;   // Number of tokens in the listing not locked in a challenge
-        uint challengeID;       // Corresponds to a PollID in PLCRVoting
-	uint exitTime;		// Time the listing may leave the registry
-        uint exitTimeExpiry;    // Expiration date of exit period
+        uint256 unstakedDeposit;   // Number of tokens in the listing not locked in a challenge
+        uint256 challengeID;       // Corresponds to a PollID in PLCRVoting
+	    uint256 exitTime;		// Time the listing may leave the registry
+        uint256 exitTimeExpiry;    // Expiration date of exit period
     }
 
     struct Challenge {
-        uint rewardPool;        // (remaining) Pool of tokens to be distributed to winning voters
+        uint256 rewardPool;        // (remaining) Pool of tokens to be distributed to winning voters
         address challenger;     // Owner of Challenge
         bool resolved;          // Indication of if challenge is resolved
-        uint stake;             // Number of tokens at stake for either party during challenge
-        uint totalTokens;       // (remaining) Number of tokens used in voting by the winning side
+        uint256 stake;             // Number of tokens at stake for either party during challenge
+        uint256 totalTokens;       // (remaining) Number of tokens used in voting by the winning side
         mapping(address => bool) tokenClaims; // Indicates whether a voter has claimed a reward yet
     }
 
     // Maps challengeIDs to associated challenge data
-    mapping(uint => Challenge) public challenges;
+    mapping(uint256 => Challenge) public challenges;
 
     // Maps listingHashes to associated listingHash data
     mapping(bytes32 => Listing) public listings;
 
     // Global Variables
-    ERC20 public token;
+    IERC20 public token;
     PLCRVoting public voting;
     Parameterizer public parameterizer;
     string public name;
@@ -67,7 +68,7 @@ contract Registry {
         require(_voting != address(0) && address(voting) == address(0));
         require(_parameterizer != address(0) && address(parameterizer) == address(0));
 
-        token = ERC20(_token);
+        token = IERC20(_token);
         voting = PLCRVoting(_voting);
         parameterizer = Parameterizer(_parameterizer);
         name = _name;
@@ -84,7 +85,7 @@ contract Registry {
     @param _amount      The number of ERC20 tokens a user is willing to potentially stake
     @param _data        Extra data relevant to the application. Think IPFS hashes.
     */
-    function apply_(bytes32 _listingHash, uint _amount, string calldata _data) external {
+    function apply_(bytes32 _listingHash, uint256 _amount, string memory _data) external {
         require(!isWhitelisted(_listingHash));
         require(!appWasMade(_listingHash));
         require(_amount >= parameterizer.get("minDeposit"));
@@ -108,7 +109,7 @@ contract Registry {
     @param _listingHash A listingHash msg.sender is the owner of
     @param _amount      The number of ERC20 tokens to increase a user's unstaked deposit
     */
-    function deposit(bytes32 _listingHash, uint _amount) external {
+    function deposit(bytes32 _listingHash, uint256 _amount) external {
         Listing storage listing = listings[_listingHash];
 
         require(listing.owner == msg.sender);
@@ -124,7 +125,7 @@ contract Registry {
     @param _listingHash A listingHash msg.sender is the owner of.
     @param _amount      The number of ERC20 tokens to withdraw from the unstaked deposit.
     */
-    function withdraw(bytes32 _listingHash, uint _amount) external {
+    function withdraw(bytes32 _listingHash, uint256 _amount) external {
         Listing storage listing = listings[_listingHash];
 
         require(listing.owner == msg.sender);
@@ -150,10 +151,10 @@ contract Registry {
         require(listing.challengeID == 0 || challenges[listing.challengeID].resolved);
 
         // Ensure user never initializedExit or exitPeriodLen passed
-        require(listing.exitTime == 0 || now > listing.exitTimeExpiry);
+        require(listing.exitTime == 0 || block.timestamp > listing.exitTimeExpiry);
 
         // Set when the listing may be removed from the whitelist
-        listing.exitTime = now.add(parameterizer.get("exitTimeDelay"));
+        listing.exitTime = block.timestamp.add(parameterizer.get("exitTimeDelay"));
 	// Set exit period end time
 	listing.exitTimeExpiry = listing.exitTime.add(parameterizer.get("exitPeriodLen"));
         emit _ExitInitialized(_listingHash, listing.exitTime,
@@ -175,7 +176,7 @@ contract Registry {
         // Make sure the exit was initialized
         require(listing.exitTime > 0);
         // Time to exit has to be after exit delay but before the exitPeriodLen is over 
-	require(listing.exitTime < now && now < listing.exitTimeExpiry);
+	require(listing.exitTime < block.timestamp && block.timestamp < listing.exitTimeExpiry);
 
         resetListing(_listingHash);
         emit _ListingWithdrawn(_listingHash, msg.sender);
@@ -192,9 +193,9 @@ contract Registry {
     @param _listingHash The listingHash being challenged, whether listed or in application
     @param _data        Extra data relevant to the challenge. Think IPFS hashes.
     */
-    function challenge(bytes32 _listingHash, string calldata _data) external returns (uint challengeID) {
+    function challenge(bytes32 _listingHash, string memory _data) external returns (uint256 challengeID) {
         Listing storage listing = listings[_listingHash];
-        uint minDeposit = parameterizer.get("minDeposit");
+        uint256 minDeposit = parameterizer.get("minDeposit");
 
         // Listing must be in apply stage or already on the whitelist
         require(appWasMade(_listingHash) || listing.whitelisted);
@@ -209,20 +210,20 @@ contract Registry {
         }
 
         // Starts poll
-        uint pollID = voting.startPoll(
+        uint256 pollID = voting.startPoll(
             parameterizer.get("voteQuorum"),
             parameterizer.get("commitStageLen"),
             parameterizer.get("revealStageLen")
         );
 
-        uint oneHundred = 100; // Kludge that we need to use SafeMath
-        challenges[pollID] = Challenge({
-            challenger: msg.sender,
-            rewardPool: ((oneHundred.sub(parameterizer.get("dispensationPct"))).mul(minDeposit)).div(100),
-            stake: minDeposit,
-            resolved: false,
-            totalTokens: 0
-        });
+        uint256 oneHundred = 100; // Kludge that we need to use SafeMath
+        Challenge storage c = challenges[pollID];
+        c.challenger = msg.sender;
+        c.rewardPool = ((oneHundred.sub(parameterizer.get("dispensationPct"))).mul(minDeposit)).div(100);
+        c.stake = minDeposit;
+        c.resolved = false;
+        c.totalTokens = 0;
+    
 
         // Updates listingHash to store most recent challenge
         listing.challengeID = pollID;
@@ -233,7 +234,7 @@ contract Registry {
         // Takes tokens from challenger
         require(token.transferFrom(msg.sender, address(this), minDeposit));
 
-        (uint commitEndDate, uint revealEndDate,,,) = voting.pollMap(pollID);
+        (uint256 commitEndDate, uint256 revealEndDate,,,) = voting.pollMap(pollID);
 
         emit _Challenge(_listingHash, pollID, _data, commitEndDate, revealEndDate, msg.sender);
         return pollID;
@@ -259,9 +260,9 @@ contract Registry {
                           a challenge if one exists.
     @param _listingHashes The listingHashes whose status are being updated
     */
-    function updateStatuses(bytes32[] memory _listingHashes) public {
+    function updateStatuses(bytes32[] calldata _listingHashes) public {
         // loop through arrays, revealing each individual vote values
-        for (uint i = 0; i < _listingHashes.length; i++) {
+        for (uint256 i = 0; i < _listingHashes.length; i++) {
             updateStatus(_listingHashes[i]);
         }
     }
@@ -275,15 +276,15 @@ contract Registry {
                         must call updateStatus() before this can be called.
     @param _challengeID The PLCR pollID of the challenge a reward is being claimed for
     */
-    function claimReward(uint _challengeID) public {
+    function claimReward(uint256 _challengeID) public {
         Challenge storage challengeInstance = challenges[_challengeID];
         // Ensures the voter has not already claimed tokens and challengeInstance results have
         // been processed
         require(challengeInstance.tokenClaims[msg.sender] == false);
         require(challengeInstance.resolved == true);
 
-        uint voterTokens = voting.getNumPassingTokens(msg.sender, _challengeID);
-        uint reward = voterTokens.mul(challengeInstance.rewardPool)
+        uint256 voterTokens = voting.getNumPassingTokens(msg.sender, _challengeID);
+        uint256 reward = voterTokens.mul(challengeInstance.rewardPool)
                       .div(challengeInstance.totalTokens);
 
         // Subtracts the voter's information to preserve the participation ratios
@@ -304,9 +305,9 @@ contract Registry {
                          must call updateStatus() before this can be called.
     @param _challengeIDs The PLCR pollIDs of the challenges rewards are being claimed for
     */
-    function claimRewards(uint[] memory _challengeIDs) public {
+    function claimRewards(uint256[] calldata _challengeIDs) public {
         // loop through arrays, claiming each individual vote reward
-        for (uint i = 0; i < _challengeIDs.length; i++) {
+        for (uint256 i = 0; i < _challengeIDs.length; i++) {
             claimReward(_challengeIDs[i]);
         }
     }
@@ -319,13 +320,13 @@ contract Registry {
     @dev                Calculates the provided voter's token reward for the given poll.
     @param _voter       The address of the voter whose reward balance is to be returned
     @param _challengeID The pollID of the challenge a reward balance is being queried for
-    @return             The uint indicating the voter's reward
+    @return             The uint256 indicating the voter's reward
     */
-    function voterReward(address _voter, uint _challengeID)
-    public view returns (uint) {
-        uint totalTokens = challenges[_challengeID].totalTokens;
-        uint rewardPool = challenges[_challengeID].rewardPool;
-        uint voterTokens = voting.getNumPassingTokens(_voter, _challengeID);
+    function voterReward(address _voter, uint256 _challengeID)
+    public view returns (uint256) {
+        uint256 totalTokens = challenges[_challengeID].totalTokens;
+        uint256 rewardPool = challenges[_challengeID].rewardPool;
+        uint256 voterTokens = voting.getNumPassingTokens(_voter, _challengeID);
         return voterTokens.mul(rewardPool).div(totalTokens);
     }
 
@@ -334,7 +335,7 @@ contract Registry {
     @param _listingHash The listingHash whose status is to be examined
     */
     function canBeWhitelisted(bytes32 _listingHash) view public returns (bool) {
-        uint challengeID = listings[_listingHash].challengeID;
+        uint256 challengeID = listings[_listingHash].challengeID;
 
         // Ensures that the application was made,
         // the application period has ended,
@@ -342,7 +343,7 @@ contract Registry {
         // and either: the challengeID == 0, or the challenge has been resolved.
         if (
             appWasMade(_listingHash) &&
-            listings[_listingHash].applicationExpiry < now &&
+            listings[_listingHash].applicationExpiry < block.timestamp &&
             !isWhitelisted(_listingHash) &&
             (challengeID == 0 || challenges[challengeID].resolved == true)
         ) { return true; }
@@ -371,7 +372,7 @@ contract Registry {
     @param _listingHash The listingHash whose status is to be examined
     */
     function challengeExists(bytes32 _listingHash) view public returns (bool) {
-        uint challengeID = listings[_listingHash].challengeID;
+        uint256 challengeID = listings[_listingHash].challengeID;
 
         return (listings[_listingHash].challengeID > 0 && !challenges[challengeID].resolved);
     }
@@ -382,7 +383,7 @@ contract Registry {
     @param _listingHash A listingHash with an unresolved challenge
     */
     function challengeCanBeResolved(bytes32 _listingHash) view public returns (bool) {
-        uint challengeID = listings[_listingHash].challengeID;
+        uint256 challengeID = listings[_listingHash].challengeID;
 
         require(challengeExists(_listingHash));
 
@@ -393,7 +394,7 @@ contract Registry {
     @dev                Determines the number of tokens awarded to the winning party in a challenge.
     @param _challengeID The challengeID to determine a reward for
     */
-    function determineReward(uint _challengeID) public view returns (uint) {
+    function determineReward(uint256 _challengeID) public view returns (uint256) {
         require(!challenges[_challengeID].resolved && voting.pollEnded(_challengeID));
 
         // Edge case, nobody voted, give all tokens to the challenger.
@@ -409,7 +410,7 @@ contract Registry {
     @param _challengeID The challengeID to query
     @param _voter       The voter whose claim status to query for the provided challengeID
     */
-    function tokenClaims(uint _challengeID, address _voter) public view returns (bool) {
+    function tokenClaims(uint256 _challengeID, address _voter) public view returns (bool) {
         return challenges[_challengeID].tokenClaims[_voter];
     }
 
@@ -423,11 +424,11 @@ contract Registry {
     @param _listingHash A listingHash with a challenge that is to be resolved
     */
     function resolveChallenge(bytes32 _listingHash) private {
-        uint challengeID = listings[_listingHash].challengeID;
+        uint256 challengeID = listings[_listingHash].challengeID;
 
         // Calculates the winner's reward,
         // which is: (winner's full stake) + (dispensationPct * loser's stake)
-        uint reward = determineReward(challengeID);
+        uint256 reward = determineReward(challengeID);
 
         // Sets flag on challenge being processed
         challenges[challengeID].resolved = true;
@@ -481,7 +482,7 @@ contract Registry {
 
         // Deleting listing to prevent reentry
         address owner = listing.owner;
-        uint unstakedDeposit = listing.unstakedDeposit;
+        uint256 unstakedDeposit = listing.unstakedDeposit;
         delete listings[_listingHash];
         
         // Transfers any remaining balance back to the owner
